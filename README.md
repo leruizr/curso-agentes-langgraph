@@ -36,14 +36,16 @@ uv venv
 
 # add dependencies
 uv add --pre langgraph langchain langchain-openai
+
+# add dev dependencies
 uv add "langgraph-cli[inmem]" --dev
+uv add ipykernel --dev
+uv add grandalf --dev
 
 # run the agent
 uv run langgraph dev
 
-# add ipykernel for jupyter
-uv add ipykernel --dev
-uv add grandalf --dev
+
 
 # install the project
 uv pip install -e .
