@@ -36,6 +36,7 @@ uv venv
 
 # add dependencies
 uv add --pre langgraph langchain langchain-openai
+uv add --pre langchain-anthropic
 
 # add dev dependencies
 uv add "langgraph-cli[inmem]" --dev
