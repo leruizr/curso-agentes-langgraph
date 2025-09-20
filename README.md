@@ -43,6 +43,7 @@ uv run langgraph dev
 
 # add ipykernel for jupyter
 uv add ipykernel --dev
+uv add grandalf --dev
 
 # install the project
 uv pip install -e .

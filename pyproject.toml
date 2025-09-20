@@ -12,6 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "grandalf>=0.8",
     "ipykernel>=6.30.1",
     "langgraph-cli[inmem]>=0.4.2",
 ]
