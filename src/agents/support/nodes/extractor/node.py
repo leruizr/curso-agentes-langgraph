@@ -18,8 +18,8 @@ def extractor(state: State):
     history = state["messages"]
     customer_name = state.get("customer_name", None)
     new_state: State = {}
-    if customer_name is None or len(history) >= 10:
-        prompt = prompt_template.format(name=customer_name)
+    if customer_name is None:
+        prompt = prompt_template.format()
         schema = llm.invoke([("system", prompt)] + history)
         new_state["customer_name"] = schema.name
         new_state["phone"] = schema.phone
