@@ -2,7 +2,7 @@ from langchain.chat_models import init_chat_model
 from pydantic import BaseModel, Field
 
 from agents.support.state import State
-from agents.support.nodes.extractor.prompt import SYSTEM_PROMPT
+from agents.support.nodes.extractor.prompt import prompt_template
 
 class ContactInfo(BaseModel):
     """Contact information for a person."""
@@ -19,7 +19,8 @@ def extractor(state: State):
     customer_name = state.get("customer_name", None)
     new_state: State = {}
     if customer_name is None or len(history) >= 10:
-        schema = llm.invoke([("system", SYSTEM_PROMPT)] + history)
+        prompt = prompt_template.format(name=customer_name)
+        schema = llm.invoke([("system", prompt)] + history)
         new_state["customer_name"] = schema.name
         new_state["phone"] = schema.phone
         new_state["my_age"] = schema.age
