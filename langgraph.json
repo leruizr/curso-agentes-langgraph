@@ -7,7 +7,8 @@
         "support": "./src/agents/support/agent.py:agent",
         "booking": "./src/agents/support/nodes/booking/node.py:booking_node",
         "react": "./src/agents/react.py:agent",
-        "code_review": "./src/agents/code_review.py:agent"
+        "code_review": "./src/agents/code_review.py:agent",
+        "orchestrator": "./src/agents/orchestrator.py:agent"
     },
     "env": ".env"
 }
