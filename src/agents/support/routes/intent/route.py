@@ -14,6 +14,9 @@ llm = llm.with_structured_output(schema=RouteIntent)
 
 def intent_route(state: State) -> Literal["conversation", "booking"]:
     history = state["messages"]
+    print('*'*100)
+    print(history)
+    print('*'*100)
     schema = llm.invoke([("system", SYSTEM_PROMPT)] + history)
     if schema.step is not None:
         return schema.step
