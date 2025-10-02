@@ -1,198 +1,137 @@
-## Create a new project
+# Curso Agentes LangGraph
 
-```sh
-# Install python3 and create a new project.
+Guía práctica para clonar este repositorio, instalar las dependencias y ejecutar los agentes usando Windows. Incluye un recorrido de la estructura del código y enlaces a documentación adicional.
 
-python3 --version
-mkdir my_agent
-cd my_agent
-python3 -m venv .venv
-source .venv/bin/activate
-which python
-# install langgraph and langchain
+> 📘 ¿Buscas una descripción detallada de cada agente y servicio? Revisa [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-pip install --pre langgraph langchain langchain-openai
+## Requisitos previos
+
+Asegúrate de contar con las siguientes herramientas en tu equipo Windows (puedes instalarlas desde PowerShell):
+
+```powershell
+# Python 3.12 y Git
+winget install Python.Python.3.12 -s winget
+winget install Git.Git -s winget
+
+# (Opcional) Docker Desktop para levantar Postgres en contenedor
+winget install Docker.DockerDesktop -s winget
+```
+
+Verifica las instalaciones:
+
+```powershell
+python --version
+pip --version
+git --version
+# opcional
+docker --version
+```
+
+## Paso a paso: ejecutar el proyecto
+
+### 1. Clonar el repositorio
+
+```powershell
+git clone https://github.com/<tu-usuario>/curso-agentes-langgraph.git
+cd curso-agentes-langgraph
+```
+
+### 2. Crear y activar el entorno virtual
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+```
+
+> 💡 Si PowerShell bloquea la activación del entorno, ejecuta `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` una sola vez.
+
+### 3. Instalar dependencias
+
+```powershell
+pip install -e .
 pip install "langgraph-cli[inmem]"
-
-# run the agent
-langgraph dev
 ```
 
-### Env with UV
+Esto instalará FastAPI, LangGraph, los conectores de modelos (OpenAI y Anthropic) y la CLI de LangGraph definida en `pyproject.toml`。【F:pyproject.toml†L1-L24】
 
-```sh
-# Install uv
+### 4. Configurar variables de entorno
 
-curl -LsSf https://astral.sh/uv/install.sh | sh
-uv --version
+Crea un archivo `.env` en la raíz del proyecto con tus claves de proveedor. Usa PowerShell para generarlo rápidamente:
 
-# deactivate the virtual environment
-deactivate
-rm -rf .venv
+```powershell
+@"
+OPENAI_API_KEY=tu_clave_de_openai
+ANTHROPIC_API_KEY=tu_clave_de_anthropic
+LANGCHAIN_API_KEY=opcional_si_usas_langsmith
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_PROJECT=curso-agentes-langgraph
+"@ | Out-File -FilePath .env -Encoding utf8
+```
 
-## init
-uv init
+El archivo será leído automáticamente por la API y por la CLI de LangGraph.【F:src/api/main.py†L1-L16】【F:langgraph.json†L1-L13】
+
+### 5. (Opcional) Levantar Postgres con Docker
+
+El proyecto usa Postgres como almacén de checkpoints. Si tienes Docker Desktop puedes iniciarlo con:
+
+```powershell
+docker compose up -d postgres
+```
+
+Esto creará una base llamada `my_course_agent` accesible en `postgresql://postgres:postgres@localhost:5432/my_course_agent`, la misma URL configurada en `src/api/db.py`.【F:src/api/db.py†L1-L24】【F:docker-compose.yml†L1-L23】
+
+### 6. Ejecutar la API de soporte
+
+Con el entorno virtual activo y `.env` configurado, lanza el servidor FastAPI:
+
+```powershell
+uvicorn src.api.main:app --reload
+```
+
+- La documentación interactiva estará disponible en `http://127.0.0.1:8000/docs`.
+- El endpoint `POST /chat/{chat_id}` crea una conversación o la retoma usando el checkpointer de Postgres.【F:src/api/main.py†L18-L36】
+- El endpoint `POST /chat/{chat_id}/stream` entrega respuestas en streaming.【F:src/api/main.py†L38-L44】
+
+### 7. Probar agentes con LangGraph CLI
+
+Los agentes definidos en `langgraph.json` pueden ejecutarse con el modo interactivo de la CLI:
+
+```powershell
+langgraph dev --graph support
+```
+
+Reemplaza `support` por cualquiera de los agentes registrados (`agent`, `simple`, `rag`, `react`, `code_review`, `orchestrator`, `evaluator`, etc.).【F:langgraph.json†L3-L12】
+
+## Configuración alternativa con `uv` (opcional)
+
+Si prefieres gestionar dependencias con [uv](https://github.com/astral-sh/uv):
+
+```powershell
+# Instalar uv
+irm https://astral.sh/uv/install.ps1 | iex
+
+# Crear el proyecto
 uv venv
-
-# add dependencies
-uv add --pre langgraph langchain langchain-openai
-uv add --pre langchain-anthropic
-uv add "fastapi[standard]"
-
-# add dev dependencies
-uv add "langgraph-cli[inmem]" --dev
-uv add ipykernel --dev
-uv add grandalf --dev
-
-# run the agent
-uv run langgraph dev
-
-
-
-# install the project
+.\.venv\Scripts\Activate.ps1
 uv pip install -e .
+uv pip install "langgraph-cli[inmem]" --dev
 ```
 
-```toml
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["*"]
+Puedes ejecutar cualquier comando con `uv run`, por ejemplo:
+
+```powershell
+uv run langgraph dev --graph support
+uv run uvicorn src.api.main:app --reload
 ```
 
-- https://mermaidviewer.com/editor
+## Estructura del proyecto
 
+Consulta [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para un resumen completo de cada agente, nodo y servicio.
 
-### Orchestrator Template
+## Recursos útiles
 
-<details>
-<summary>Template</summary>
+- [Documentación de LangGraph](https://langchain-ai.github.io/langgraph/)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [LangSmith](https://docs.smith.langchain.com/) (para trazas si habilitas `LANGCHAIN_TRACING_V2`)
 
-```py
-from langgraph.graph import MessagesState
-from langgraph.graph import StateGraph, START, END
-from typing import Literal
-
-class State(MessagesState):
-    nodes: list[str]
-
-
-def orchestrator(state: State):
-    return state
-
-
-def node_1(state: State):
-    return state
-
-
-def node_2(state: State):
-    return state
-
-
-def node_3(state: State):
-    return state
-
-
-def aggregator(state: State):
-    return state
-
-
-builder = StateGraph(State)
-
-builder.add_node('orchestrator', orchestrator)
-builder.add_node('node_1', node_1)
-builder.add_node('node_2', node_2)
-builder.add_node('node_3', node_3)
-builder.add_node('aggregator', aggregator)
-
-builder.add_edge(START, 'orchestrator')
-builder.add_edge('orchestrator', 'node_1')
-builder.add_edge('orchestrator', 'node_2')
-builder.add_edge('orchestrator', 'node_3')
-builder.add_edge('node_1', 'aggregator')
-builder.add_edge('node_2', 'aggregator')
-builder.add_edge('node_3', 'aggregator')
-builder.add_edge('aggregator', END)
-agent = builder.compile()
-
-```
-
-</details>
-
-
-
-
-
-
-### Evaluator Template
-
-<details>
-<summary>Template</summary>
-
-```py
-from typing import TypedDict
-from langgraph.graph import StateGraph, START, END
-from typing import Literal
-import random
-
-class State(TypedDict):
-    nodes: list[str]
-
-class State(MessagesState):
-    nodes: list[str]
-
-
-def generator_node(state: State):
-    return state
-
-
-def evaluator_node(state: State):
-    return state
-
-
-builder = StateGraph(State)
-
-builder.add_node('generator_node', generator_node)
-builder.add_node('evaluator_node', evaluator_node)
-
-builder.add_edge(START, 'generator_node')
-builder.add_edge('generator_node', 'evaluator_node')
-builder.add_edge('evaluator_node', END)
-agent = builder.compile()
-```
-</details>
-
-### Fast API Checkpoint
-
-<details>
-<summary>Template</summary>
-
-```py
-import os
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from fastapi import Depends
-from typing import Annotated
-
-from langgraph.checkpoint.postgres import PostgresSaver
-
-DB_URI = os.getenv("DB_URI")
-
-# Global checkpointer instance
-_checkpointer: PostgresSaver | None = None
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global _checkpointer
-    with PostgresSaver.from_conn_string(DB_URI) as checkpointer:
-        _checkpointer = checkpointer
-        _checkpointer.setup()
-        yield
-
-def get_checkpointer() -> PostgresSaver:
-    if _checkpointer is None:
-        raise RuntimeError("Checkpointer not initialized. Make sure lifespan is running.")
-    return _checkpointer
-
-CheckpointerDep = Annotated[PostgresSaver, Depends(get_checkpointer)]
-```
-</details>
